@@ -32,7 +32,7 @@ uv run python loadtest/run.py smoke --env-file infra/.env
 - Grupo 4 concluído: `hm_platform.auth` (JWT + cache de JWKS), `hm_platform.testing.tokens` (RSA/JWKS falsos), `identity.users` + provisionamento JIT (`hm_identity.infra.users`), `DbSession` (commit antes da resposta).
 - Grupo 5 concluído: tabelas `households`/`memberships`/`invites` com RLS, `identity.redeem_invite` (SECURITY DEFINER), `hm_platform.tenancy` (portas `UserProvisioner`/`MembershipResolver` ligadas em `hm_api.main`; decisão registrada no D6), rotas em `hm_identity.api.routes` e suíte de isolamento que descobre as rotas com escopo de lar sozinha.
 - Grupo 6: 6.1–6.4 concluídas (`hm_platform.health`/`telemetry`/`logs`). A **6.5 (dashboard)** está em `infra/grafana/provisioning/dashboards/api-overview.json`, com as queries validadas contra dados reais; falta a verificação visual com o cenário `smoke` do k6 (depende de 7.2 e 8.3).
-- Nenhum commit foi feito ainda: commitar só quando o usuário pedir.
+- Repositório: https://github.com/PedroElorriaga/KasaOikos (commit inicial `9811469` na `main`). Commitar só quando o usuário pedir; autor configurado só neste repositório.
 - Grupo 7 concluído: erros em Problem Details (`hm_platform.errors`; routers registrados em `hm_api.modules.ROUTERS`), `hm serve` + `create_production_app`, `apps/api/Dockerfile` e serviços `migrate`/`api` no Compose. A fumaça de ponta a ponta (7.3) foi verificada contra o Compose da estação.
 - Grupo 8: 8.1 (seed, `loadtest/seed.py`), 8.2 (`loadtest/lib/` + `loadtest/run.py`) e 8.4 (`read-heavy`/`mixed` + remote write com histograma nativo + linha "Carga do k6" no dashboard) concluídas. A **8.3** (`smoke` e `isolation`) passa contra o Compose da estação, mas a tarefa pede o servidor; **8.5** e **8.6** também dependem do servidor.
 - Próximo passo: preparar o servidor (2.5), então 8.3, 6.5, 8.5 e 8.6 a partir da estação.
@@ -50,6 +50,7 @@ uv run python loadtest/run.py smoke --env-file infra/.env
 - Teste de mutação: rode com `PYTHONDONTWRITEBYTECODE=1`. O `.pyc` é validado por mtime (em segundos) e tamanho; uma mutação de mesmo tamanho restaurada no mesmo segundo reaproveita o bytecode mutante.
 - Módulo novo no workspace: acrescente o `COPY` do `pyproject.toml` dele em `apps/api/Dockerfile` e o router em `hm_api.modules.ROUTERS`.
 - Comandos da CLI escrevem logs no stderr; o stdout é a saída do comando.
+- O hook do `pre-commit` guarda o caminho do Python do venv: depois de mover o venv, rode `uv run pre-commit install` de novo. Os hooks do ruff usam `--force-exclude`; sem ele, os arquivos passados explicitamente furam o `extend-exclude` das migrações.
 - O Grafana não percebe sozinho a edição do JSON de dashboard (bind mount do Docker Desktop): recarregue com `POST /api/admin/provisioning/dashboards/reload` (usuário admin) ou reinicie o container.
 - No Tempo, o span `connect` do SQLAlchemy é a retirada de uma conexão do pool (inclui a espera por uma livre), não a abertura de conexão TCP.
 - O último lar do seed é reservado ao cenário `smoke`; o pool de tokens dos outros cenários o deixa de fora. Resultados de desenvolvimento vão para `loadtest/.tmp/`; `--save` grava em `loadtest/results/` (versionado), só para execuções oficiais.

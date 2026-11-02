@@ -1,0 +1,13 @@
+# Lista de permissão: só o que a imagem da API precisa entra no contexto de build.
+# Assim infra/.env (senhas), estudo/, .git e caches nunca chegam ao Docker.
+**
+!pyproject.toml
+!uv.lock
+!apps/
+!packages/
+!modules/
+
+**/__pycache__
+**/*.py[cod]
+**/tests/
+**/Dockerfile

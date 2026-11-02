@@ -1,0 +1,6 @@
+# Normaliza finais de linha: o projeto roda em Windows, mas scripts e containers esperam LF.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary

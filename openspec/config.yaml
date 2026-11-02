@@ -1,0 +1,44 @@
+schema: spec-driven
+
+context: |
+  Language: pt-BR
+  All artifacts must be written in pt-BR.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+  Código (módulos, classes, rotas, tabelas) em inglês; documentação em pt-BR.
+
+  Projeto: Home Manager — sistema multi-tenant para administração de lares
+  (finanças, tarefas, estoque, notificações). Projeto de aprendizado: começa
+  como monolito modular e evolui para microserviços em fases. Toda decisão
+  deve favorecer o aprendizado e a medição (k6) da evolução arquitetural.
+  Restrição de custo: apenas ferramentas gratuitas/open source ou self-hosted.
+
+  Stack:
+  - Backend: Python 3.12+, FastAPI, SQLAlchemy 2.0 async, Alembic, Pydantic v2,
+    uv (workspaces), import-linter para fronteiras entre módulos.
+  - Dados: PostgreSQL (um schema por módulo, Row Level Security), pgvector, Redis.
+  - Auth: Keycloak (OIDC; PKCE no mobile) apenas para autenticação.
+    Autorização (lares, membros, papéis) é responsabilidade do módulo identity.
+  - Mobile: Expo (React Native, TypeScript), Expo Push.
+  - IA (fases futuras): LangGraph, Ollama em GPU local de 8 GB, Langfuse.
+  - Observabilidade: OpenTelemetry → Grafana, Prometheus, Loki, Tempo.
+  - Carga: k6 executado em máquina separada do alvo.
+  - Infra: Docker Compose (servidor local 42 GB) → k3s em fases futuras.
+
+  Modelo de tenancy:
+  - Lar (household) é o tenant. Um usuário pode pertencer a vários lares,
+    com papel por lar: admin | member.
+  - Lar ativo enviado no header X-Household-Id e validado contra a membership.
+  - household_id NUNCA vem do corpo da requisição nem de saída de LLM.
+
+rules:
+  proposal:
+    - Indicar a fase do roadmap à qual a change pertence
+    - Incluir seção de Non-goals
+  design:
+    - Registrar o impacto da decisão na futura extração para microserviços
+    - Indicar como a mudança será medida com k6, quando aplicável
+  specs:
+    - Todo requisito que acessa dados de domínio deve ter cenário de isolamento entre lares
+  tasks:
+    - Tarefas de no máximo ~2 horas
+    - Incluir tarefas de teste (pytest) junto da implementação, não ao final

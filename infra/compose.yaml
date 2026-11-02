@@ -1,0 +1,249 @@
+# Ambiente do Home Manager (servidor local). Uso, a partir de infra/:
+#   cp .env.example .env   # e preencha as senhas
+#   docker compose up -d
+name: home-manager
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.2-pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      # Lidas pelos scripts de init (rodam só com o volume vazio).
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?defina KEYCLOAK_DB_PASSWORD no .env}
+      HM_MIGRATOR_PASSWORD: ${HM_MIGRATOR_PASSWORD:?defina HM_MIGRATOR_PASSWORD no .env}
+      HM_APP_PASSWORD: ${HM_APP_PASSWORD:?defina HM_APP_PASSWORD no .env}
+    # max_connections configurável para o experimento workers × pool_size (D9).
+    command: ["postgres", "-c", "max_connections=${POSTGRES_MAX_CONNECTIONS:-100}"]
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  valkey:
+    image: valkey/valkey:8.1-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--requirepass", "${VALKEY_PASSWORD:?defina VALKEY_PASSWORD no .env}"]
+    environment:
+      # Usada pelo valkey-cli do healthcheck, sem expor a senha na linha de comando.
+      REDISCLI_AUTH: ${VALKEY_PASSWORD}
+    ports:
+      - "${VALKEY_PORT:-6379}:6379"
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6
+    restart: unless-stopped
+    # Importa infra/keycloak/realm-home.json no boot. Se o realm já existir, o import
+    # é ignorado: para aplicar mudanças no arquivo, recrie o volume do Postgres.
+    command: ["start", "--import-realm"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?defina KEYCLOAK_ADMIN_PASSWORD no .env}
+      # Laboratório sem TLS. KC_HOSTNAME fixa o emissor (iss) dos tokens no endereço
+      # usado pelos clientes externos; o backchannel dinâmico deixa a API buscar o
+      # JWKS pela rede interna (http://keycloak:8080).
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      # Substitui o placeholder ${HM_LOADTEST_CLIENT_SECRET} do realm no import.
+      HM_LOADTEST_CLIENT_SECRET: ${HM_LOADTEST_CLIENT_SECRET:?defina HM_LOADTEST_CLIENT_SECRET no .env}
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    healthcheck:
+      # A imagem não tem curl: a checagem fala HTTP direto com a porta de gerenciamento.
+      # Olha o status HTTP, não o corpo: com o Keycloak ainda em bootstrap, as
+      # sub-checagens já aparecem "UP" enquanto o status geral é 503 "DOWN".
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000 &&
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '^HTTP/1.1 200' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  # --- API (tarefa 7.2) --------------------------------------------------------
+  # Uma imagem, dois usos: "migrate" roda as migrações e termina; "api" só sobe depois
+  # dele concluir com sucesso. Só o migrate recebe a senha do hm_migrator.
+
+  migrate:
+    build: &api-build
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    image: home-manager-api:dev
+    command: ["hm", "migrate", "up"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: &api-db-env
+        HM_DB__HOST: postgres
+        HM_DB__APP_PASSWORD: ${HM_APP_PASSWORD}
+      HM_DB__MIGRATOR_PASSWORD: ${HM_MIGRATOR_PASSWORD}
+      HM_OTEL__ENABLED: "false"
+
+  api:
+    build: *api-build
+    image: home-manager-api:dev
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    environment:
+      <<: *api-db-env
+      # Experimento workers × pool_size (design D9): conexões = workers × pool_size.
+      HM_WORKERS: ${HM_WORKERS:-2}
+      HM_DB__POOL_SIZE: ${HM_DB_POOL_SIZE:-10}
+      HM_REDIS__HOST: valkey
+      HM_REDIS__PASSWORD: ${VALKEY_PASSWORD}
+      # O "iss" dos tokens é o endereço público do Keycloak; as chaves são buscadas
+      # pela rede interna do Compose.
+      HM_OIDC__ISSUER: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}/realms/home
+      HM_OIDC__JWKS_URL: http://keycloak:8080/realms/home/protocol/openid-connect/certs
+      HM_OTEL__EXPORTER_ENDPOINT: http://otel-collector:4318
+      HM_OTEL__ENVIRONMENT: lab
+      HM_LOG_LEVEL: ${HM_LOG_LEVEL:-INFO}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    healthcheck:
+      # Readiness (banco e cache), não só liveness: "healthy" = pronto para o k6.
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+  # --- Observabilidade (design D8) -------------------------------------------
+  # Collector, Tempo e Loki usam imagens sem shell, então não há como ter
+  # healthcheck dentro do container; a saúde deles aparece na métrica "up" do
+  # Prometheus (que faz scrape de cada um) e no teste de datasources do Grafana.
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.163.1
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+    ports:
+      - "${OTEL_GRPC_PORT:-4317}:4317"
+      - "${OTEL_HTTP_PORT:-4318}:4318"
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      # k6 envia métricas por remote write (design D11).
+      - --web.enable-remote-write-receiver
+      # Métricas da API chegam do Collector via OTLP.
+      - --web.enable-otlp-receiver
+      # Exemplars ligam pontos de latência a traces no Tempo.
+      - --enable-feature=exemplar-storage
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:9090/-/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  tempo:
+    image: grafana/tempo:2.10.9
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+
+  loki:
+    image: grafana/loki:3.7.9
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki-data:/loki
+
+  grafana:
+    image: grafana/grafana:13.2.4
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?defina GRAFANA_ADMIN_PASSWORD no .env}
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  postgres-data:
+  valkey-data:
+  prometheus-data:
+  tempo-data:
+  loki-data:
+  grafana-data:

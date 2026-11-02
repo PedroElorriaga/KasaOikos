@@ -1,0 +1,140 @@
+[project]
+name = "home-manager"
+version = "0.1.0"
+description = "Home Manager — monolito modular multi-tenant (projeto de aprendizado)"
+requires-python = ">=3.13"
+dependencies = [
+    "hm-api",
+    "hm-platform",
+    "hm-identity",
+    "hm-finance",
+    "hm-tasks",
+    "hm-inventory",
+    "hm-notifications",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["apps/*", "packages/*", "modules/*"]
+
+[tool.uv.sources]
+hm-api = { workspace = true }
+hm-platform = { workspace = true }
+hm-identity = { workspace = true }
+hm-finance = { workspace = true }
+hm-tasks = { workspace = true }
+hm-inventory = { workspace = true }
+hm-notifications = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "import-linter>=2.15",
+    "mypy>=2.4.0",
+    "openapi-spec-validator>=0.9.0",
+    "pre-commit>=4.7.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.17.0",
+    "testcontainers>=4.15.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["**/migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "ASYNC", "S", "RUF", "PT", "TID"]
+ignore = ["RUF001", "RUF002", "RUF003"]  # caracteres acentuados em docstrings/comentários pt-BR
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S105", "S106", "S608"]  # S608: SQL com nomes constantes
+"loadtest/**" = ["S603"]  # o runner executa git e k6, com argumentos montados por ele
+
+[tool.ruff.lint.isort]
+known-first-party = ["hm_api", "hm_platform", "hm_identity", "hm_finance", "hm_tasks", "hm_inventory", "hm_notifications"]
+known-local-folder = ["common"]  # loadtest/common.py, importado pelos scripts vizinhos
+
+[tool.mypy]
+strict = true
+python_version = "3.13"
+explicit_package_bases = true
+mypy_path = [
+    "apps/api/src",
+    "packages/platform/src",
+    "modules/identity/src",
+    "modules/finance/src",
+    "modules/tasks/src",
+    "modules/inventory/src",
+    "modules/notifications/src",
+    "loadtest",
+]
+files = ["apps", "packages", "modules", "tests", "loadtest"]
+exclude = ['/migrations/versions/']
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["apps", "packages", "modules", "tests"]
+addopts = "--import-mode=importlib"
+
+# Fronteiras entre módulos (design D2). Rodar com: uv run lint-imports
+[tool.importlinter]
+root_packages = [
+    "hm_api",
+    "hm_platform",
+    "hm_identity",
+    "hm_finance",
+    "hm_tasks",
+    "hm_inventory",
+    "hm_notifications",
+]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Camadas: hm_api > módulos > hm_platform"
+type = "layers"
+layers = [
+    "hm_api",
+    "hm_identity : hm_finance : hm_tasks : hm_inventory : hm_notifications",
+    "hm_platform",
+]
+
+
+[[tool.importlinter.contracts]]
+name = "Módulos independentes (exceto via <módulo>.public)"
+type = "independence"
+modules = ["hm_identity", "hm_finance", "hm_tasks", "hm_inventory", "hm_notifications"]
+ignore_imports = [
+    "** -> hm_identity.public",
+    "** -> hm_finance.public",
+    "** -> hm_tasks.public",
+    "** -> hm_inventory.public",
+    "** -> hm_notifications.public",
+]
+# As exceções acima só passam a existir quando um módulo usar o public.py de outro.
+unmatched_ignore_imports_alerting = "none"
+
+[[tool.importlinter.contracts]]
+name = "Domínio não depende de infra nem de frameworks"
+type = "forbidden"
+source_modules = [
+    "hm_identity.domain",
+    "hm_finance.domain",
+    "hm_tasks.domain",
+    "hm_inventory.domain",
+    "hm_notifications.domain",
+]
+forbidden_modules = [
+    "hm_identity.infra", "hm_identity.api",
+    "hm_finance.infra", "hm_finance.api",
+    "hm_tasks.infra", "hm_tasks.api",
+    "hm_inventory.infra", "hm_inventory.api",
+    "hm_notifications.infra", "hm_notifications.api",
+    "fastapi",
+    "sqlalchemy",
+]

@@ -1,0 +1,30 @@
+[project]
+name = "hm-api"
+version = "0.1.0"
+description = "Composition root: aplicação FastAPI do monolito"
+requires-python = ">=3.13"
+dependencies = [
+    "hm-platform",
+    "hm-identity",
+    "hm-finance",
+    "hm-tasks",
+    "hm-inventory",
+    "hm-notifications",
+    "fastapi>=0.156.4",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+hm = "hm_api.cli:main"
+
+[tool.uv.sources]
+hm-platform = { workspace = true }
+hm-identity = { workspace = true }
+hm-finance = { workspace = true }
+hm-tasks = { workspace = true }
+hm-inventory = { workspace = true }
+hm-notifications = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"

@@ -1,0 +1,12 @@
+# Dashboards versionados no repositório (design D8). Editar pela UI não persiste:
+# altere o JSON nesta pasta.
+apiVersion: 1
+
+providers:
+  - name: home-manager
+    folder: Home Manager
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/provisioning/dashboards

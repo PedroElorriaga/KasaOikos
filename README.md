@@ -47,7 +47,7 @@ A stack ociosa ocupa cerca de 2,5 GB de RAM, dos quais ~1,7 GB são do Keycloak.
 Clone **dentro do sistema de arquivos do WSL** (ex.: `~/`), e não em `/mnt/c/...`: bind mounts a partir do disco do Windows são lentos e perdem permissões.
 
 ```bash
-git clone <url-do-repositorio> ~/home-manager
+git clone https://github.com/PedroElorriaga/KasaOikos.git ~/home-manager
 cd ~/home-manager/infra
 cp .env.example .env
 ```

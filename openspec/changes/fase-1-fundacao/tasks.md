@@ -4,7 +4,7 @@
 - [x] 1.2 Criar os pacotes `hm_platform`, `hm_identity`, `hm_finance`, `hm_tasks`, `hm_inventory` e `hm_notifications`, cada um com `public.py`, `api/`, `domain/`, `infra/` e `migrations/`, e o app `apps/api`; verificar que `uv run python -c "import hm_identity, hm_finance"` funciona
 - [x] 1.3 Configurar `ruff` (lint + format), `mypy --strict` e `pre-commit`; verificar com `uv run ruff check . && uv run mypy .` passando no esqueleto
 - [x] 1.4 Configurar os contratos do `import-linter` (independence, layers, forbidden; D2) e criar um teste-sentinela temporário que viola uma fronteira; verificar que `lint-imports` falha com ele e passa sem ele
-- [ ] 1.5 Criar o workflow do GitHub Actions (lint, mypy, import-linter, pytest com serviço Docker); verificar com execução verde em um PR de teste
+- [x] 1.5 Criar o workflow do GitHub Actions (lint, mypy, import-linter, pytest com serviço Docker); verificar com execução verde em um PR de teste
 
 ## 2. Infraestrutura local (Docker Compose)
 

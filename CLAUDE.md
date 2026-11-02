@@ -26,7 +26,7 @@ uv run python loadtest/run.py smoke --env-file infra/.env
 
 ## Estado (atualize ao avançar)
 
-- Grupo 1 concluído (1.1–1.4). A tarefa **1.5 (CI)** tem o workflow escrito, mas espera um repositório no GitHub para ser verificada.
+- Grupo 1 concluído (1.1–1.5); o CI (`.github/workflows/ci.yml`) foi verificado verde no PR #1.
 - Grupo 2: 2.1–2.4 concluídas (`infra/compose.yaml` e configs em `infra/`). A **2.5 (README)** está escrita e foi verificada na estação com uma cópia limpa; falta segui-la no servidor a partir de um clone real (depende de commit/push).
 - Grupo 3 concluído: `hm_platform.settings`/`db`/`ids`/`migrations`/`cache`, CLI `hm migrate` (`hm_api.cli`) e fixtures em `hm_platform.testing.fixtures` (registradas pelo `conftest.py` raiz).
 - Grupo 4 concluído: `hm_platform.auth` (JWT + cache de JWKS), `hm_platform.testing.tokens` (RSA/JWKS falsos), `identity.users` + provisionamento JIT (`hm_identity.infra.users`), `DbSession` (commit antes da resposta).

@@ -12,7 +12,7 @@
 - [x] 2.2 Criar o script de init do Postgres: database `home`, roles `hm_migrator` (owner) e `hm_app` (NOBYPASSRLS), schemas por módulo e grants (D4); verificar via `psql` que `hm_app` não é owner e tem `rolbypassrls = false`
 - [x] 2.3 Criar e exportar o realm `home` (`infra/keycloak/realm-home.json`) com os clients `home-api`, `home-mobile` (PKCE) e `home-loadtest` (direct grants, token de 1 h) e o mapper de audiência; verificar obtendo um token com `curl` e inspecionando `iss`/`aud`
 - [x] 2.4 Adicionar ao Compose o OTel Collector, Prometheus (com remote-write receiver e exemplars), Tempo, Loki e Grafana com datasources provisionados (D8); verificar que o Grafana abre com os 3 datasources em estado OK
-- [ ] 2.5 Documentar no `README.md` como subir o ambiente no servidor e como apontar a estação Windows para ele (variáveis de host/IP); verificar seguindo o README do zero em um clone limpo
+- [x] 2.5 Documentar no `README.md` como subir o ambiente no servidor e como apontar a estação Windows para ele (variáveis de host/IP); verificar seguindo o README do zero em um clone limpo
 
 ## 3. Plataforma: configuração, banco e testes
 
@@ -45,7 +45,7 @@
 - [x] 6.2 Configurar o OTel SDK (traces + métricas via OTLP) com auto-instrumentação de FastAPI, SQLAlchemy e Redis, e o middleware `X-Trace-Id`, com testes de "novo trace" e "continuidade de `traceparent`" usando um exporter em memória; verificar com pytest
 - [x] 6.3 Garantir que as métricas HTTP usam a rota template e não têm rótulos de alta cardinalidade, com teste que inspeciona os rótulos de uma métrica de rota parametrizada; verificar com pytest
 - [x] 6.4 Configurar `structlog` em JSON com trace id, user id e household id, e o processador de redação de dados sensíveis, com testes de correlação e de redação de token e código de convite; verificar com pytest
-- [ ] 6.5 Provisionar o dashboard "API Overview" no Grafana (RED por rota, p50/p95/p99, pool do DB, hit ratio do cache de membership) com link de exemplar para o Tempo; verificar visualmente com tráfego gerado pelo cenário `smoke`
+- [x] 6.5 Provisionar o dashboard "API Overview" no Grafana (RED por rota, p50/p95/p99, pool do DB, hit ratio do cache de membership) com link de exemplar para o Tempo; verificar visualmente com tráfego gerado pelo cenário `smoke`
 
 ## 7. Composição e empacotamento da API
 
@@ -57,7 +57,7 @@
 
 - [x] 8.1 Implementar o seed em Python (usuários via Admin API em lote, lares e memberships via SQL) parametrizado por quantidade; verificar com seed de 1.000 lares × 3 membros e contagens conferidas no banco
 - [x] 8.2 Criar a biblioteca k6 compartilhada (config de host, pool de tokens no `setup()`, `handleSummary` que grava JSON com data, git sha e config); verificar rodando um script vazio que gera o arquivo de resultado
-- [ ] 8.3 Implementar os cenários `smoke` e `isolation` (qualquer `2xx` cruzado falha); verificar com os dois passando contra o servidor
+- [x] 8.3 Implementar os cenários `smoke` e `isolation` (qualquer `2xx` cruzado falha); verificar com os dois passando contra o servidor
 - [x] 8.4 Implementar os cenários `read-heavy` e `mixed` com thresholds iniciais e envio de métricas por remote write para o Prometheus; verificar com as métricas do k6 aparecendo no Grafana ao lado das métricas da API
 - [ ] 8.5 Executar a baseline oficial a partir da estação Windows (registrando o ping até o servidor) e salvar os resultados em `loadtest/results/`; verificar com os arquivos versionados no git
 - [ ] 8.6 Executar o experimento `workers × pool_size` (D9), no mínimo 3 combinações, e registrar as conclusões em `loadtest/results/README.md`; verificar com uma tabela comparativa de RPS, p95 e erros por combinação

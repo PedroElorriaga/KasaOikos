@@ -8,8 +8,10 @@ São duas máquinas:
 
 | Máquina | Papel | O que roda |
 |---|---|---|
-| **Servidor** (Windows + WSL2, 42 GB) | Ambiente completo e alvo do k6 | `infra/compose.yaml`: Postgres, Valkey, Keycloak, OTel Collector, Prometheus, Tempo, Loki, Grafana (e a API, a partir da tarefa 7.2) |
+| **Servidor** (Windows + WSL2, 42 GB) | Ambiente completo e alvo do k6 | `infra/compose.yaml`: Postgres, Valkey, Keycloak, OTel Collector, Prometheus, Tempo, Loki, Grafana e a API |
 | **Estação** (Windows) | Desenvolvimento e carga | `uv`, testes (testcontainers no Docker local), k6, seed |
+
+São máquinas **diferentes**. Não rode os comandos do servidor no WSL da estação: com a integração WSL do Docker Desktop, o `docker` do WSL fala com o mesmo Docker da estação, e o `docker compose up` substitui a stack dela (o nome do projeto é fixo), com as senhas do outro `.env`. Antes de cada comando, confira o nome da máquina no prompt do terminal.
 
 A stack ociosa ocupa cerca de 2,5 GB de RAM, dos quais ~1,7 GB são do Keycloak.
 
@@ -17,30 +19,47 @@ A stack ociosa ocupa cerca de 2,5 GB de RAM, dos quais ~1,7 GB são do Keycloak.
 
 ### 1. Pré-requisitos (uma vez)
 
-- **WSL2** com uma distro Linux (ex.: Ubuntu) e **Docker** disponível dentro dela. Serve o Docker Engine instalado na distro ou o Docker Desktop com integração WSL. Confira com `docker compose version` dentro do WSL.
-- **Rede do WSL em modo espelhado**, para que as portas publicadas pelo Docker fiquem acessíveis pela rede local (no modo NAT padrão, só o próprio Windows do servidor as enxerga). No Windows do servidor, crie ou edite `%UserProfile%\.wslconfig`:
+- **Docker Desktop** com o backend WSL2 e uma distro Linux (ex.: Ubuntu):
+  - em *Settings → Resources → WSL integration*, ative a integração com a distro, para usar `docker` dentro dela;
+  - em *Settings → General*, marque **Start Docker Desktop when you sign in**. Sem o Docker Desktop aberto, nada responde. Depois de reiniciar o servidor, é preciso entrar no Windows uma vez.
 
-  ```ini
-  [wsl2]
-  networkingMode=mirrored
-  ```
+  Confira dentro do WSL: `docker info --format '{{.Name}}'` mostra `docker-desktop`. O Docker Desktop publica as portas direto no Windows, então a rede do WSL pode ficar no modo padrão.
 
-  Depois rode `wsl --shutdown` e abra o WSL de novo. Se usar Docker Desktop no servidor, este passo não é necessário: ele publica as portas direto no Windows.
+  **Depois de reiniciar o servidor, o WSL ou o Docker Desktop**, rode `docker compose up -d --force-recreate --wait` na pasta `infra/`. Os containers voltam sozinhos, mas as pastas montadas a partir do WSL (`infra/grafana/`, `infra/prometheus/`...) podem chegar vazias neles. O sintoma mais visível é a pasta "Home Manager" do Grafana vazia, enquanto os data sources continuam aparecendo: o Grafana os guarda no próprio banco. Recriar os containers refaz as montagens, e os dados ficam nos volumes.
 
 - **Firewall do Windows** do servidor liberando as portas para a rede local. Em um PowerShell como administrador:
 
   ```powershell
-  # Firewall do Windows (Docker Desktop ou WSL)
   New-NetFirewallRule -DisplayName "Home Manager" -Direction Inbound -Protocol TCP `
     -LocalPort 3000,4317,4318,5432,6379,8000,8080,9090 -Profile Private -Action Allow
-
-  # Só no modo espelhado do WSL: o tráfego passa também pelo firewall do Hyper-V
-  Set-NetFirewallHyperVVMSetting -Name '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -DefaultInboundAction Allow
   ```
 
   A rede da casa precisa estar com o perfil **Privada** no Windows. Para medições com k6, prefira cabo a Wi-Fi entre as máquinas.
 
-- **IP fixo para o servidor** (reserva DHCP no roteador). O IP entra no emissor (`iss`) dos tokens: se ele mudar, os tokens emitidos antes deixam de ser aceitos.
+- **IP do servidor fixo**. Para descobrir o IP, rode `ipconfig | Select-String "IPv4"` no Windows do servidor e use o endereço da rede da casa (ex.: `192.168.15.9`). Ignore o `172.x.x.1` da rede virtual do WSL e endereços de VPN. Depois, **reserve esse IP no roteador** (menu "DHCP", "Reserva de IP" ou "IP fixo", pelo nome da máquina). O IP entra no emissor (`iss`) dos tokens e no `.env` da estação. Sem a reserva, o roteador pode trocá-lo depois de alguns dias, e a estação passa a ver *"a máquina de destino as recusou ativamente"* em todas as portas, mesmo com o ping respondendo (outro aparelho assumiu o IP antigo).
+
+<details>
+<summary>Alternativa: Docker Engine instalado na distro, sem Docker Desktop</summary>
+
+Funciona, mas tem três passos a mais:
+
+1. Instale pelo [guia oficial para Ubuntu](https://docs.docker.com/engine/install/ubuntu/) e entre no grupo `docker`: `sudo usermod -aG docker $USER`, depois `wsl --shutdown` no Windows e abra o WSL de novo. Sem isso, `docker` responde *"permission denied ... docker.sock"*. Para o Docker subir com o WSL, o `/etc/wsl.conf` precisa ter `[boot]` e `systemd=true`.
+2. Coloque a rede do WSL em modo espelhado, para as portas chegarem à rede local (no modo NAT padrão, só o próprio Windows as enxerga). Crie `%UserProfile%\.wslconfig` com `[wsl2]` e `networkingMode=mirrored`, rode `wsl --shutdown` e libere também o firewall do Hyper-V:
+
+   ```powershell
+   Set-NetFirewallHyperVVMSetting -Name '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -DefaultInboundAction Allow
+   ```
+
+3. O WSL desliga quando nenhum terminal dele fica aberto, e o Docker vai junto. Para mantê-lo ligado depois do login, crie uma tarefa agendada (troque `Ubuntu` pelo nome que `wsl -l -v` mostrar):
+
+   ```powershell
+   $a = New-ScheduledTaskAction -Execute "wsl.exe" -Argument "-d Ubuntu --exec sleep infinity"
+   $t = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+   $s = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+   Register-ScheduledTask -TaskName "WSL keepalive" -Action $a -Trigger $t -Settings $s
+   ```
+
+</details>
 
 ### 2. Clonar e configurar
 
@@ -55,7 +74,7 @@ cp .env.example .env
 Edite o `.env`:
 
 - Troque **todas** as senhas `change-me`. Para gerar uma: `openssl rand -hex 24` (hexadecimal evita caracteres que precisariam de escape em URLs de conexão).
-- Defina `KEYCLOAK_PUBLIC_URL=http://<IP-do-servidor>:8080`. Esse é o endereço que a estação e o k6 usam, e ele vira o `iss` dos tokens.
+- Defina `KEYCLOAK_PUBLIC_URL` com o IP do servidor, sem `< >`. Por exemplo, `KEYCLOAK_PUBLIC_URL=http://192.168.15.9:8080`. Esse é o endereço que a estação e o k6 usam, e ele vira o `iss` dos tokens. Com um valor inválido, o Keycloak não sobe (*"Provided hostname is neither a plain hostname nor a valid URL"*). Se o IP mudar depois, troque aqui e rode `docker compose up -d --wait`: o Keycloak e a API são recriados com o endereço novo, sem perder dados.
 
 ### 3. Subir
 
@@ -71,7 +90,7 @@ No primeiro boot, com os volumes vazios:
 - `infra/postgres/init/` cria o banco `home`, os roles `hm_migrator` (dono, migrações e seed) e `hm_app` (API, sujeito a RLS), os schemas por módulo e o banco do Keycloak.
 - O Keycloak importa o realm `home` de `infra/keycloak/realm-home.json`.
 
-A cada `up`, o serviço `migrate` aplica as migrações (`hm migrate up`) e termina; a `api` só sobe depois dele.
+A cada `up`, o serviço `migrate` aplica as migrações (`hm migrate up`) e termina; a `api` só sobe depois dele. No `docker compose ps`, ele aparece como `Exited (0)`, e isso é o esperado; só um código diferente de 0 indica falha (`docker compose logs migrate`).
 
 Os dois passos acima **só rodam com o volume vazio**. Para aplicar mudanças nesses arquivos (ou trocar senhas do `.env` já aplicadas), recrie tudo:
 
@@ -107,10 +126,10 @@ Abra o Grafana em `http://<IP>:3000` (usuário e senha `GRAFANA_ADMIN_*` do `.en
 Na estação, guarde o endereço do servidor numa variável de ambiente do usuário (PowerShell, uma vez; abra um terminal novo depois):
 
 ```powershell
-[Environment]::SetEnvironmentVariable("HM_SERVER", "192.168.0.10", "User")   # use o IP do servidor
+[Environment]::SetEnvironmentVariable("HM_SERVER", "192.168.15.9", "User")   # use o IP do servidor
 ```
 
-Teste o acesso às portas a partir da estação:
+Teste o acesso às portas a partir da estação. Se todas falharem com *"recusou ativamente"* enquanto o ping responde, o IP do servidor mudou (veja os pré-requisitos):
 
 ```powershell
 foreach ($p in 3000, 4318, 5432, 8000, 8080, 9090) {

@@ -105,4 +105,8 @@ Para checar tudo (lint, tipos e testes):
 just check
 ```
 
+- O Docker Desktop precisa estar rodando: os testes de integração sobem um Postgres real (testcontainers).
+- Não é preciso instalar Python: o `uv` baixa o Python 3.13 e as dependências do `backend/` na primeira execução.
+- `just fmt` formata o código e aplica as correções automáticas do lint.
+
 _O restante desta seção é preenchido ao longo da fase 0._

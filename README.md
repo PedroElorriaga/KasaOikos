@@ -83,4 +83,26 @@ deixar logs estruturados e métricas básicas prontos já na fase 0, porque o cu
 
 ## 6. Como rodar / testar
 
-_A preencher na fase 0._
+### Pré-requisitos
+
+| Ferramenta | Para quê | Instalação (Windows) |
+|---|---|---|
+| [Git](https://git-scm.com/) | versionamento | `winget install Git.Git` |
+| [just](https://github.com/casey/just) | tarefas do projeto (`just check`) | `winget install Casey.Just` |
+| [uv](https://docs.astral.sh/uv/) | Python e dependências do back-end | `winget install astral-sh.uv` |
+| [pre-commit](https://pre-commit.com/) | hooks locais (gitleaks) | `uv tool install pre-commit` |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Postgres, Keycloak e testes de integração | `winget install Docker.DockerDesktop` |
+
+Depois de clonar, ative os hooks uma vez (o repositório é público e o gitleaks barra commits com segredos):
+
+```
+pre-commit install
+```
+
+Para checar tudo (lint, tipos e testes):
+
+```
+just check
+```
+
+_O restante desta seção é preenchido ao longo da fase 0._

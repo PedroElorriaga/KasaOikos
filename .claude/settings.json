@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.*.local)",
+      "Read(**/.env.staging)",
+      "Read(**/.env.production)",
+      "Read(**/secrets/**)",
+
+      "Bash(cat *.env)",
+      "Bash(cat *.env.local)",
+      "Bash(less *.env)",
+      "Bash(head *.env)",
+      "Bash(tail *.env)",
+      "Bash(type *.env)",
+      "PowerShell(Get-Content *.env)",
+      "PowerShell(gc *.env)",
+      "PowerShell(cat *.env)",
+      "PowerShell(type *.env)",
+
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "PowerShell(git push --force*)",
+      "PowerShell(git push -f*)",
+      "PowerShell(git push * --force*)",
+      "PowerShell(git push * -f*)",
+
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)",
+      "PowerShell(Remove-Item * -Recurse*)",
+      "PowerShell(rm * -Recurse*)",
+
+      "Bash(curl * | sh*)",
+      "Bash(curl * | bash*)",
+      "Bash(wget * | sh*)",
+      "Bash(wget * | bash*)",
+      "PowerShell(iwr * | iex*)",
+      "PowerShell(irm * | iex*)",
+      "PowerShell(Invoke-WebRequest * | Invoke-Expression*)",
+      "PowerShell(Invoke-RestMethod * | Invoke-Expression*)",
+
+      "Bash(ssh *)",
+      "Bash(scp *)",
+      "PowerShell(ssh *)",
+      "PowerShell(scp *)"
+    ]
+  }
+}

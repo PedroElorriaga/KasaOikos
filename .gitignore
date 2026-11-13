@@ -1,0 +1,33 @@
+# --- Segredos (o repositório é público) ---
+.env
+.env.*
+!.env.example
+**/secrets/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+build/
+
+# --- Node ---
+node_modules/
+dist/
+*.tsbuildinfo
+.pnpm-store/
+
+# --- Editores e sistema ---
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- Claude Code (configuração pessoal, não do projeto) ---
+.claude/settings.local.json

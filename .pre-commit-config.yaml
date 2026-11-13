@@ -1,0 +1,7 @@
+# Hooks locais. Instalar uma vez por clone: `pre-commit install`.
+# O repositório é público: o gitleaks barra o commit se encontrar segredo nos arquivos em stage.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

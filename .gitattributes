@@ -1,0 +1,16 @@
+# Tudo que for texto vai para o repositório e para o disco com LF,
+# mesmo no Windows (evita quebrar scripts, hooks e containers Linux).
+* text=auto eol=lf
+
+# Binários: sem conversão de fim de linha nem diff textual.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary

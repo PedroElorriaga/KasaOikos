@@ -109,4 +109,39 @@ just check
 - Não é preciso instalar Python: o `uv` baixa o Python 3.13 e as dependências do `backend/` na primeira execução.
 - `just fmt` formata o código e aplica as correções automáticas do lint.
 
+### Como rodar o ambiente local
+
+1. Crie o `.env` a partir do exemplo e troque todos os valores (o `.env` é ignorado pelo git):
+
+   ```
+   Copy-Item .env.example .env
+   ```
+
+2. Suba o Postgres e o Keycloak:
+
+   ```
+   docker compose up -d
+   docker compose ps   # aguarde os dois serviços ficarem "healthy" (o Keycloak leva ~1 min)
+   ```
+
+3. Acesse:
+
+   | O quê | URL | Login |
+   |---|---|---|
+   | Conta de um usuário de teste | http://localhost:8080/realms/kasaoikos/account | `ana.teste` ou `bruno.teste`, senhas `KC_SENHA_USUARIO_TESTE_*` do `.env` |
+   | Console admin do Keycloak | http://localhost:8080/admin | `KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD` do `.env` |
+   | Postgres | `localhost:5432`, bancos `app` e `keycloak` | um usuário por banco (`APP_DB_*`, `KEYCLOAK_DB_*`) |
+
+4. Observabilidade (opcional): `docker compose --profile obs up -d` sobe também o Grafana em
+   http://localhost:3000 (imagem `grafana/otel-lgtm`, OTLP em 4317/4318).
+
+5. Para parar: `docker compose down` (os dados ficam no volume `postgres-dados`).
+
+Observações:
+
+- Todas as portas ficam presas em `127.0.0.1`.
+- O realm (`infra/keycloak/realm-kasaoikos.json`) e o script de criação dos bancos
+  (`infra/postgres/init/`) só rodam na **primeira** subida. Para aplicar mudanças neles ou nas senhas
+  do `.env`, é preciso recriar o volume com `docker compose down -v`, que **apaga todos os dados locais**.
+
 _O restante desta seção é preenchido ao longo da fase 0._

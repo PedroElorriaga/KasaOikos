@@ -48,6 +48,7 @@
       "firstName": "Ana",
       "lastName": "Teste",
       "enabled": true,
+      "realmRoles": ["default-roles-kasaoikos"],
       "credentials": [
         {
           "type": "password",
@@ -63,6 +64,7 @@
       "firstName": "Bruno",
       "lastName": "Teste",
       "enabled": true,
+      "realmRoles": ["default-roles-kasaoikos"],
       "credentials": [
         {
           "type": "password",

@@ -1,0 +1,77 @@
+# Ambiente local de desenvolvimento. Não é a configuração de staging (ver ADR-0003).
+# Todas as senhas vêm do `.env` (copie de `.env.example`).
+# As portas ficam presas em 127.0.0.1: nada fica acessível de fora da máquina.
+#
+#   docker compose up -d                 # Postgres + Keycloak
+#   docker compose --profile obs up -d   # + Grafana LGTM (observabilidade)
+
+services:
+  postgres:
+    image: postgres:18.7
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      # Lidas pelo script de init para criar os bancos `app` e `keycloak`.
+      APP_DB_USER: ${APP_DB_USER:?defina APP_DB_USER no .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?defina APP_DB_PASSWORD no .env}
+      KEYCLOAK_DB_USER: ${KEYCLOAK_DB_USER:?defina KEYCLOAK_DB_USER no .env}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?defina KEYCLOAK_DB_PASSWORD no .env}
+    volumes:
+      # No Postgres 18 os dados ficam em /var/lib/postgresql/<versão>/docker.
+      - postgres-dados:/var/lib/postgresql
+      # Roda só na primeira subida (volume vazio).
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      # Via TCP: durante o init o servidor temporário só escuta no socket local,
+      # então o serviço só fica saudável depois que os bancos foram criados.
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.2
+    # Modo dev: HTTP, sem hostname fixo. Importa o realm só se ele ainda não existir.
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER:?defina KEYCLOAK_DB_USER no .env}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?defina KEYCLOAK_DB_PASSWORD no .env}
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:?defina KEYCLOAK_ADMIN no .env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?defina KEYCLOAK_ADMIN_PASSWORD no .env}
+      # Usadas pelos placeholders ${...} do realm na importação.
+      KC_SENHA_USUARIO_TESTE_1: ${KC_SENHA_USUARIO_TESTE_1:?defina KC_SENHA_USUARIO_TESTE_1 no .env}
+      KC_SENHA_USUARIO_TESTE_2: ${KC_SENHA_USUARIO_TESTE_2:?defina KC_SENHA_USUARIO_TESTE_2 no .env}
+    volumes:
+      - ./infra/keycloak/realm-kasaoikos.json:/opt/keycloak/data/import/realm-kasaoikos.json:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # A imagem não tem curl; usa o /dev/tcp do bash na porta de gerência (9000, não exposta).
+      test:
+        - "CMD"
+        - "bash"
+        - "-c"
+        - "{ printf 'HEAD /health/ready HTTP/1.0\\r\\n\\r\\n' >&0; grep -q 'HTTP/1.0 200'; } 0<>/dev/tcp/localhost/9000"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  lgtm:
+    image: grafana/otel-lgtm:0.41.0
+    profiles: ["obs"]
+    ports:
+      - "127.0.0.1:3000:3000" # Grafana
+      - "127.0.0.1:4317:4317" # OTLP gRPC
+      - "127.0.0.1:4318:4318" # OTLP HTTP
+
+volumes:
+  postgres-dados:

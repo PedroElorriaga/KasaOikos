@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "API do KasaOikos (monolito modular)"
 requires-python = ">=3.13,<3.14"
 dependencies = [
+    "alembic>=1.20.1",
     "fastapi>=0.162.7",
     "psycopg[binary]>=3.3.9",
     "pydantic-settings>=2.16.3",
@@ -38,7 +39,7 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "S", "RUF"]
 python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["app", "tests"]
+files = ["app", "tests", "migrations"]
 
 [tool.pydantic-mypy]
 init_forbid_extra = true

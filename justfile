@@ -16,6 +16,10 @@ check-backend:
     uv run --directory backend --locked mypy
     uv run --directory backend --locked pytest
 
+# Aplica as migrations pendentes no banco do `.env` (revise a migration antes de rodar)
+migrate:
+    uv run --directory backend --locked alembic upgrade head
+
 # Formata o código e aplica as correções automáticas do lint
 fmt:
     uv run --directory backend --locked ruff format .

@@ -124,7 +124,13 @@ just check
    docker compose ps   # aguarde os dois serviços ficarem "healthy" (o Keycloak leva ~1 min)
    ```
 
-3. Acesse:
+3. Crie as tabelas do app (aplica as migrations do Alembic no banco `app`, usando o `DATABASE_URL` do `.env`):
+
+   ```
+   just migrate
+   ```
+
+4. Acesse:
 
    | O quê | URL | Login |
    |---|---|---|
@@ -132,10 +138,10 @@ just check
    | Console admin do Keycloak | http://localhost:8080/admin | `KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD` do `.env` |
    | Postgres | `localhost:5432`, bancos `app` e `keycloak` | um usuário por banco (`APP_DB_*`, `KEYCLOAK_DB_*`) |
 
-4. Observabilidade (opcional): `docker compose --profile obs up -d` sobe também o Grafana em
+5. Observabilidade (opcional): `docker compose --profile obs up -d` sobe também o Grafana em
    http://localhost:3000 (imagem `grafana/otel-lgtm`, OTLP em 4317/4318).
 
-5. Para parar: `docker compose down` (os dados ficam no volume `postgres-dados`).
+6. Para parar: `docker compose down` (os dados ficam no volume `postgres-dados`).
 
 Observações:
 

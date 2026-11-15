@@ -26,7 +26,7 @@ frontend/src/{paginas,componentes,api}/
 load/                       # scripts k6
 docs/adr/                   # um ADR por decisão de arquitetura
 ```
-Módulos: `casa`, `tarefas`, `custos`, `estoque`.
+Módulos: `casa`, `tarefas`, `custos`, `estoque`, `usuarios`. Autenticação (JWT) em `backend/app/autenticacao.py`.
 
 ## Convenções
 - Lint/format: ruff (Python), ESLint + Prettier (TS). Não desativar regra sem avisar.

@@ -17,3 +17,16 @@ class Settings(BaseSettings):
 
     # SecretStr: a URL contém senha e não pode aparecer em repr nem em log.
     database_url: SecretStr
+
+    # Emissor dos tokens (realm do Keycloak), comparado com o claim `iss`.
+    oidc_issuer: str
+    # Valor que precisa estar no claim `aud` (mapper de audience do realm).
+    oidc_audience: str
+    # Chaves públicas do emissor. Vazio: usa o endpoint padrão do Keycloak a partir do issuer.
+    oidc_jwks_url: str | None = None
+
+    @property
+    def jwks_url(self) -> str:
+        if self.oidc_jwks_url:
+            return self.oidc_jwks_url
+        return f"{self.oidc_issuer.rstrip('/')}/protocol/openid-connect/certs"

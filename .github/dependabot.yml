@@ -1,5 +1,6 @@
 # Atualizações semanais de dependências. Cada ecossistema abre um PR agrupado com as
-# atualizações de versão; alertas de segurança continuam saindo em PRs separados.
+# atualizações minor/patch; cada major sai em PR próprio, para revisar com calma.
+# Alertas de segurança continuam saindo em PRs separados.
 version: 2
 updates:
   # Back-end: uv.lock
@@ -15,6 +16,7 @@ updates:
     groups:
       backend:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # Front-end: pnpm-lock.yaml
   - package-ecosystem: npm
@@ -25,9 +27,15 @@ updates:
       default-days: 7
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      # TS 7 (reescrita em Go) quebra o ESLint: o typescript-eslint só suporta TS < 6.1.
+      # Remover quando o typescript-eslint suportar o TS 7 e atualizar os dois juntos.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       frontend:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # Actions do CI (fixadas por SHA)
   - package-ecosystem: github-actions
@@ -39,6 +47,7 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # Imagens do compose.yaml (Postgres, Keycloak, LGTM). Dockerfiles entram na M0.9.
   - package-ecosystem: docker-compose
@@ -54,3 +63,4 @@ updates:
     groups:
       imagens:
         patterns: ["*"]
+        update-types: ["minor", "patch"]

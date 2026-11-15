@@ -1,0 +1,2 @@
+# Segredo FALSO para testar o gitleaks no CI. Branch descartável: não fazer merge.
+api_key = "3rZPHYb29sH34gj5EmNaB5sEdbsv8cvd"

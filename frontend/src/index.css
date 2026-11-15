@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+
+/* Paleta do canvas "KasaOikos — telas" (wireframe, não é a identidade final). */
+@theme {
+  --color-fundo: #f4f5f2;
+  --color-superficie: #ffffff;
+  --color-borda: #e3e6e1;
+  --color-texto: #17201c;
+  --color-texto-secundario: #5b6660;
+  --color-primaria: #0f766e;
+  --color-primaria-escura: #115e59;
+  --color-ativo: #e6f2f0;
+
+  /* Fontes do sistema: nada é baixado de terceiros. Inter/Space Grotesk só se estiverem instaladas. */
+  --font-sans: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-titulo: 'Space Grotesk', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}

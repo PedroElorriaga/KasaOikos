@@ -90,6 +90,8 @@ deixar logs estruturados e métricas básicas prontos já na fase 0, porque o cu
 | [Git](https://git-scm.com/) | versionamento | `winget install Git.Git` |
 | [just](https://github.com/casey/just) | tarefas do projeto (`just check`) | `winget install Casey.Just` |
 | [uv](https://docs.astral.sh/uv/) | Python e dependências do back-end | `winget install astral-sh.uv` |
+| [Node.js](https://nodejs.org/) 24 LTS | front-end | `winget install OpenJS.NodeJS.LTS` |
+| [pnpm](https://pnpm.io/) | dependências do front-end | `winget install pnpm.pnpm` |
 | [pre-commit](https://pre-commit.com/) | hooks locais (gitleaks) | `uv tool install pre-commit` |
 | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Postgres, Keycloak e testes de integração | `winget install Docker.DockerDesktop` |
 
@@ -107,6 +109,8 @@ just check
 
 - O Docker Desktop precisa estar rodando: os testes de integração sobem um Postgres real (testcontainers).
 - Não é preciso instalar Python: o `uv` baixa o Python 3.13 e as dependências do `backend/` na primeira execução.
+- No front, o `just check` instala as dependências do `frontend/` (pnpm, lockfile congelado) e roda
+  `pnpm check`: ESLint, Prettier, `tsc` e Vitest.
 - `just fmt` formata o código e aplica as correções automáticas do lint.
 
 ### Como rodar o ambiente local
@@ -138,10 +142,13 @@ just check
    | Console admin do Keycloak | http://localhost:8080/admin | `KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD` do `.env` |
    | Postgres | `localhost:5432`, bancos `app` e `keycloak` | um usuário por banco (`APP_DB_*`, `KEYCLOAK_DB_*`) |
 
-5. Observabilidade (opcional): `docker compose --profile obs up -d` sobe também o Grafana em
+5. Front-end: `just front` sobe o Vite em http://localhost:5173 (porta fixa, porque as redirect URIs
+   do realm são exatas). Na primeira vez, rode antes `pnpm --dir frontend install`.
+
+6. Observabilidade (opcional): `docker compose --profile obs up -d` sobe também o Grafana em
    http://localhost:3000 (imagem `grafana/otel-lgtm`, OTLP em 4317/4318).
 
-6. Para parar: `docker compose down` (os dados ficam no volume `postgres-dados`).
+7. Para parar: `docker compose down` (os dados ficam no volume `postgres-dados`).
 
 Observações:
 

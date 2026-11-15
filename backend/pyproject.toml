@@ -40,7 +40,7 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "S", "RUF"]
 python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["app", "tests", "migrations"]
+files = ["app", "tests", "migrations", "scripts"]
 
 [tool.pydantic-mypy]
 init_forbid_extra = true

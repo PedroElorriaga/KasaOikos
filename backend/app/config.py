@@ -1,6 +1,7 @@
 from pathlib import Path
+from urllib.parse import urlsplit
 
-from pydantic import SecretStr
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # `.env` na raiz do repositório (fora do git). Opcional: variáveis de ambiente têm prioridade.
@@ -24,6 +25,30 @@ class Settings(BaseSettings):
     oidc_audience: str
     # Chaves públicas do emissor. Vazio: usa o endpoint padrão do Keycloak a partir do issuer.
     oidc_jwks_url: str | None = None
+
+    # Origens do front liberadas no CORS, exatas (ex.: ["http://localhost:5173"]).
+    # Vazio: nenhuma origem liberada (fecha por padrão).
+    cors_origins: list[str] = []
+
+    @field_validator("cors_origins")
+    @classmethod
+    def _origens_exatas(cls, origens: list[str]) -> list[str]:
+        for origem in origens:
+            partes = urlsplit(origem)
+            exata = (
+                partes.scheme in ("http", "https")
+                and bool(partes.hostname)
+                and "*" not in origem
+                and not partes.username
+                and not partes.password
+                and origem == f"{partes.scheme}://{partes.netloc}"
+            )
+            if not exata:
+                raise ValueError(
+                    f"origem de CORS inválida: {origem!r}; use esquema://host[:porta], "
+                    "sem curinga, caminho ou barra no fim"
+                )
+        return origens
 
     @property
     def jwks_url(self) -> str:

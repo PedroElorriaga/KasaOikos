@@ -6,7 +6,8 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // *.gerado.*: tipos gerados pelo `pnpm gen:api` a partir do OpenAPI (não editar à mão).
+  globalIgnores(['dist', 'src/api/*.gerado.*']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

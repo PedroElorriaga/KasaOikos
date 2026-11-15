@@ -20,6 +20,10 @@ check-frontend:
     pnpm --dir frontend install --frozen-lockfile
     pnpm --dir frontend check
 
+# Sobe a API em modo de desenvolvimento (http://localhost:8000), lendo o `.env`
+api:
+    uv run --directory backend --locked uvicorn --factory app.main:create_app --reload --host 127.0.0.1 --port 8000
+
 # Sobe o front em modo de desenvolvimento (http://localhost:5173)
 front:
     pnpm --dir frontend dev

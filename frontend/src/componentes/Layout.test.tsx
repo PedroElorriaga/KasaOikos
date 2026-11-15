@@ -1,23 +1,22 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
-import { createMemoryRouter, RouterProvider } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, screen, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-import { rotas } from '../rotas'
+import { entrarComo, mockarMe, renderizarApp } from '../testes/apoio'
 
-function renderizarEm(caminho: string) {
-  const roteador = createMemoryRouter(rotas, { initialEntries: [caminho] })
-  render(<RouterProvider router={roteador} />)
-}
-
-function navegacao() {
-  return within(screen.getByRole('navigation', { name: 'Navegação principal' }))
+async function navegacao() {
+  return within(await screen.findByRole('navigation', { name: 'Navegação principal' }))
 }
 
 describe('Layout', () => {
-  it('mostra as 4 seções do canvas, na ordem, com o link de cada uma', () => {
-    renderizarEm('/')
+  beforeEach(async () => {
+    await entrarComo()
+    mockarMe()
+  })
 
-    const links = navegacao().getAllByRole('link')
+  it('mostra as 4 seções do canvas, na ordem, com o link de cada uma', async () => {
+    renderizarApp('/')
+
+    const links = (await navegacao()).getAllByRole('link')
     expect(links.map((link) => link.getAttribute('aria-label'))).toEqual([
       'Início',
       'Tarefas',
@@ -32,21 +31,19 @@ describe('Layout', () => {
     ])
   })
 
-  it('marca só a seção atual como página corrente', () => {
-    renderizarEm('/custos')
+  it('marca só a seção atual como página corrente', async () => {
+    renderizarApp('/custos')
 
-    expect(navegacao().getByRole('link', { name: 'Custos' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
-    expect(navegacao().getByRole('link', { name: 'Início' })).not.toHaveAttribute('aria-current')
+    const nav = await navegacao()
+    expect(nav.getByRole('link', { name: 'Custos' })).toHaveAttribute('aria-current', 'page')
+    expect(nav.getByRole('link', { name: 'Início' })).not.toHaveAttribute('aria-current')
   })
 
-  it('navega para a seção clicada', () => {
-    renderizarEm('/')
-    expect(screen.getByRole('heading', { level: 1, name: 'Início' })).toBeInTheDocument()
+  it('navega para a seção clicada', async () => {
+    renderizarApp('/custos')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Custos' })).toBeInTheDocument()
 
-    fireEvent.click(navegacao().getByRole('link', { name: 'Tarefas' }))
+    fireEvent.click((await navegacao()).getByRole('link', { name: 'Tarefas' }))
 
     expect(screen.getByRole('heading', { level: 1, name: 'Tarefas' })).toBeInTheDocument()
   })

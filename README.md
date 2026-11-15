@@ -142,13 +142,32 @@ just check
    | Console admin do Keycloak | http://localhost:8080/admin | `KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD` do `.env` |
    | Postgres | `localhost:5432`, bancos `app` e `keycloak` | um usuário por banco (`APP_DB_*`, `KEYCLOAK_DB_*`) |
 
-5. Front-end: `just front` sobe o Vite em http://localhost:5173 (porta fixa, porque as redirect URIs
-   do realm são exatas). Na primeira vez, rode antes `pnpm --dir frontend install`.
+5. Suba a API e o front, cada um em um terminal:
+
+   ```
+   just api     # http://localhost:8000 (docs em /docs), lê o .env
+   just front   # http://localhost:5173; na primeira vez, antes: pnpm --dir frontend install
+   ```
+
+   Abra http://localhost:5173: o app redireciona para o login do Keycloak. Entre com `ana.teste`
+   ou `bruno.teste` e ele volta mostrando "Olá, {nome}". "Sair" encerra a sessão no Keycloak.
+
+   - O front lê do `.env` da raiz só as variáveis `VITE_*` (endereços públicos, nunca segredo).
+     A API só aceita chamadas do navegador vindas das origens em `CORS_ORIGINS`.
+   - A porta 5173 é fixa porque as redirect URIs do realm são exatas.
+   - Os tokens ficam só em memória: recarregar a página volta ao Keycloak, que devolve o usuário
+     sem pedir senha enquanto a sessão de SSO valer. Nada vai para o `localStorage`. Só o `state` e
+     o `code_verifier` do PKCE passam pelo `sessionStorage` durante o redirect e são apagados no retorno.
 
 6. Observabilidade (opcional): `docker compose --profile obs up -d` sobe também o Grafana em
    http://localhost:3000 (imagem `grafana/otel-lgtm`, OTLP em 4317/4318).
 
 7. Para parar: `docker compose down` (os dados ficam no volume `postgres-dados`).
+
+Contrato da API: depois de mudar rotas ou esquemas no back, rode `pnpm --dir frontend gen:api`.
+Ele exporta o OpenAPI do FastAPI (sem subir a API) para `frontend/src/api/openapi.gerado.json` e
+gera os tipos TS em `frontend/src/api/esquema.gerado.ts`. Os dois são versionados e **não são editados
+à mão**; se o back mudar de forma incompatível, o front quebra na compilação.
 
 Observações:
 

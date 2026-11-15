@@ -15,14 +15,14 @@ def test_quando_banco_no_ar_entao_health_responde_200(cliente: TestClient) -> No
 
 
 def test_quando_banco_fora_entao_health_responde_503_sem_expor_detalhes(
-    postgres_descartavel: PostgresContainer, caplog: pytest.LogCaptureFixture
+    postgres_descartavel: PostgresContainer, jwks_url: str, caplog: pytest.LogCaptureFixture
 ) -> None:
     pg = postgres_descartavel
     # Coletados antes de derrubar: depois do stop o container perde o mapeamento de porta.
     host = pg.get_container_host_ip()
     porta = str(pg.get_exposed_port(pg.port))
 
-    with cliente_para(pg) as cliente:
+    with cliente_para(pg, jwks_url=jwks_url) as cliente:
         # Primeiro com o banco no ar, para o pool já ter conexão aberta.
         assert cliente.get("/health").status_code == 200
 

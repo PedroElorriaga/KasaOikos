@@ -13,6 +13,8 @@ from app.main import create_app
 from tests.integracao.tokens import AUDIENCIA, EMISSOR
 
 IMAGEM_POSTGRES = "postgres:17-alpine"
+# Origem do front liberada no CORS dos clientes de teste.
+ORIGEM_FRONT = "http://localhost:5173"
 ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
 
 
@@ -37,5 +39,6 @@ def cliente_para(postgres: PostgresContainer, *, jwks_url: str) -> TestClient:
         oidc_issuer=EMISSOR,
         oidc_audience=AUDIENCIA,
         oidc_jwks_url=jwks_url,
+        cors_origins=[ORIGEM_FRONT],
     )
     return TestClient(create_app(settings))

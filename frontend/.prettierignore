@@ -1,2 +1,4 @@
 dist
 pnpm-lock.yaml
+# Gerados pelo `pnpm gen:api`: não editar à mão.
+src/api/*.gerado.*

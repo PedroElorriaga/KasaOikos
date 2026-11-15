@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router'
 
+import { useAutenticacao } from '../autenticacao/ProvedorAutenticacao'
 import { IconeCompras, IconeCustos, IconeInicio, IconeTarefas } from './icones'
 
 interface Secao {
@@ -30,6 +31,20 @@ function classesDoLink({ isActive }: { isActive: boolean }) {
   return isActive
     ? `${base} font-semibold text-primaria md:bg-ativo`
     : `${base} font-medium text-texto-secundario hover:text-texto`
+}
+
+/** Logout: rodapé da lateral no desktop, canto superior direito no celular. */
+function BotaoSair({ className }: { className: string }) {
+  const { sair } = useAutenticacao()
+  return (
+    <button
+      type="button"
+      onClick={() => void sair()}
+      className={`${className} h-11 items-center justify-center rounded-xl border border-borda bg-superficie px-4 text-sm font-semibold text-texto hover:bg-fundo`}
+    >
+      Sair
+    </button>
+  )
 }
 
 /** Layout base: barra inferior no celular, barra lateral a partir de `md` (768 px). */
@@ -65,10 +80,12 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
+        <BotaoSair className="mt-auto hidden md:flex" />
       </aside>
 
       {/* pb-[100px]: espaço para a barra inferior fixa (76 px) no celular. */}
-      <main className="mx-auto w-full max-w-[1200px] min-w-0 px-5 pt-5 pb-[100px] md:p-8">
+      <main className="relative mx-auto w-full max-w-[1200px] min-w-0 px-5 pt-5 pb-[100px] md:p-8">
+        <BotaoSair className="absolute top-5 right-5 flex md:hidden" />
         <Outlet />
       </main>
     </div>

@@ -1,0 +1,56 @@
+# Atualizações semanais de dependências. Cada ecossistema abre um PR agrupado com as
+# atualizações de versão; alertas de segurança continuam saindo em PRs separados.
+version: 2
+updates:
+  # Back-end: uv.lock
+  - package-ecosystem: uv
+    directory: /backend
+    schedule:
+      interval: weekly
+    # Espera a versão nova ter alguns dias de vida antes de propor (pacote comprometido costuma ser retirado antes).
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      backend:
+        patterns: ["*"]
+
+  # Front-end: pnpm-lock.yaml
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      frontend:
+        patterns: ["*"]
+
+  # Actions do CI (fixadas por SHA)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Imagens do compose.yaml (Postgres, Keycloak, LGTM). Dockerfiles entram na M0.9.
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    ignore:
+      # Versão major do Postgres exige migração dos dados (pg_upgrade/dump); é decisão manual.
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
+    groups:
+      imagens:
+        patterns: ["*"]

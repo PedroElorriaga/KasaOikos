@@ -92,7 +92,7 @@ deixar logs estruturados e métricas básicas prontos já na fase 0, porque o cu
 | [uv](https://docs.astral.sh/uv/) | Python e dependências do back-end | `winget install astral-sh.uv` |
 | [Node.js](https://nodejs.org/) 24 LTS | front-end | `winget install OpenJS.NodeJS.LTS` |
 | [pnpm](https://pnpm.io/) | dependências do front-end | `winget install pnpm.pnpm` |
-| [pre-commit](https://pre-commit.com/) | hooks locais (gitleaks) | `uv tool install pre-commit` |
+| [pre-commit](https://pre-commit.com/) | hooks locais (gitleaks, ruff, ESLint, Prettier) | `uv tool install pre-commit` |
 | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Postgres, Keycloak e testes de integração | `winget install Docker.DockerDesktop` |
 
 Depois de clonar, ative os hooks uma vez (o repositório é público e o gitleaks barra commits com segredos):
@@ -100,6 +100,9 @@ Depois de clonar, ative os hooks uma vez (o repositório é público e o gitleak
 ```
 pre-commit install
 ```
+
+Além do gitleaks, os hooks rodam o ruff (se o commit mexe em `backend/`) e o ESLint e o Prettier
+(se mexe em `frontend/`). Eles só verificam; para corrigir, rode `just fmt`.
 
 Para checar tudo (lint, tipos e testes):
 
@@ -175,5 +178,20 @@ Observações:
 - O realm (`infra/keycloak/realm-kasaoikos.json`) e o script de criação dos bancos
   (`infra/postgres/init/`) só rodam na **primeira** subida. Para aplicar mudanças neles ou nas senhas
   do `.env`, é preciso recriar o volume com `docker compose down -v`, que **apaga todos os dados locais**.
+
+### CI e segurança
+
+O workflow `.github/workflows/ci.yml` roda em todo push e PR, com três jobs:
+
+| Job | O que faz |
+|---|---|
+| `backend` | ruff (lint e formatação), mypy e pytest (com Postgres real via testcontainers) |
+| `frontend` | `pnpm check` (ESLint, Prettier, `tsc`, Vitest) e `pnpm build` |
+| `seguranca` | gitleaks no histórico inteiro, `pip-audit` no `uv.lock`, `pnpm audit --audit-level=high` e CodeQL (Python e TS) |
+
+- A `main` só aceita merge por PR com os três jobs verdes (ruleset no GitHub).
+- O Dependabot (`.github/dependabot.yml`) propõe toda semana atualizações de uv, npm, GitHub Actions
+  e imagens do `compose.yaml`, agrupadas por ecossistema.
+- O secret scanning e o push protection do GitHub estão ativos no repositório.
 
 _O restante desta seção é preenchido ao longo da fase 0._

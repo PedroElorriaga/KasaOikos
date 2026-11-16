@@ -6,10 +6,15 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
     "alembic>=1.20.1",
     "fastapi>=0.162.7",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.2",
+    "opentelemetry-instrumentation-fastapi>=0.66b2",
+    "opentelemetry-instrumentation-sqlalchemy>=0.66b2",
+    "opentelemetry-sdk>=1.45.2",
     "psycopg[binary]>=3.3.9",
     "pydantic-settings>=2.16.3",
     "pyjwt[crypto]>=2.15.1",
-    "sqlalchemy>=2.1.8",
+    # <2.1: opentelemetry-instrumentation-sqlalchemy 0.66 só suporta até 2.0 (2.1 vem na 0.67).
+    "sqlalchemy>=2.0.44,<2.1",
     "uvicorn>=0.54.0",
 ]
 

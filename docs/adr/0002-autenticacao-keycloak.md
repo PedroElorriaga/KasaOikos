@@ -42,6 +42,7 @@ Os papéis por casa **não** vão para roles do Keycloak. Como um usuário pode 
 
 - **Integração (maioria):** as rotas recebem tokens assinados por uma chave de teste, e o app aponta o JWKS para essa chave. O Keycloak é um serviço externo, então essa simulação é a permitida pelo CLAUDE.md. Os testes cobrem: token expirado, `aud` errado, assinatura inválida, sem token, e usuário A acessando a casa B.
 - **Fumaça (poucos):** um teste no CI sobe o Keycloak real via testcontainers e faz login de verdade para garantir que realm e configuração funcionam.
+- **Carga (k6, M0.8):** os scripts em `load/` precisam de um token real sem navegador. O realm local tem um client à parte, `kasaoikos-carga`: público, **só** com password grant (sem fluxo de navegador e sem redirect URI), com o mesmo mapper de audience `kasaoikos-api`. Ele usa os usuários de teste. O password grant é desaconselhado pelo OAuth 2.1, por isso fica restrito a esse client, e o `kasaoikos-web` continua sem ele. **Esse client não pode existir em staging/produção:** o realm de staging (M0.9) precisa sair sem ele.
 
 ### Dependências candidatas (confirmar na fase 0 antes de instalar)
 

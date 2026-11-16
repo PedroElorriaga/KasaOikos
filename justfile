@@ -32,6 +32,10 @@ front:
 migrate:
     uv run --directory backend --locked alembic upgrade head
 
+# Smoke test de carga (k6) em /health e /me; precisa da API, do Postgres e do Keycloak no ar
+smoke:
+    k6 run load/smoke.js
+
 # Formata o código e aplica as correções automáticas do lint
 fmt:
     uv run --directory backend --locked ruff format .

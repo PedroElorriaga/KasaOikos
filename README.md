@@ -172,7 +172,21 @@ just check
      do trace no Tempo). Cada requisição gera uma linha `app.acesso` com método, caminho (sem query),
      status e duração. Logs nunca levam e-mail, token, claims nem o IP do cliente.
 
-7. Para parar: `docker compose down` (os dados ficam no volume `postgres-dados`).
+7. Smoke test de carga (opcional): com a API no ar, `just smoke` (ou `k6 run load/smoke.js`) faz
+   5 usuários por 30 s baterem em `/health` e `/me`. Termina com erro se algum threshold falhar
+   (p95 < 300 ms, erros < 1%). Precisa do [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/)
+   instalado (`winget install --id GrafanaLabs.k6 -e`).
+
+   - O token vem do client `kasaoikos-carga` do realm (password grant, **só local**, ver ADR-0002),
+     com o usuário `ana.teste` e a senha `KC_SENHA_USUARIO_TESTE_1`. O script lê `OIDC_ISSUER` e a
+     senha do `.env`. Variáveis de ambiente têm prioridade, e `API_URL` e `K6_USUARIO` são opcionais.
+   - Keycloak criado antes da M0.8 não tem esse client, porque o realm só é importado na primeira
+     subida. Para criar só o client, sem apagar dados: console admin → realm `kasaoikos` → Realm
+     settings → Action → Partial import. Escolha o `realm-kasaoikos.json`, marque só *Clients* e
+     use *Skip* para os que já existem.
+   - O que se aprendeu no spike: [docs/spikes/k6-grafana.md](docs/spikes/k6-grafana.md).
+
+8. Para parar: `docker compose down` (os dados ficam no volume `postgres-dados`).
 
 Contrato da API: depois de mudar rotas ou esquemas no back, rode `pnpm --dir frontend gen:api`.
 Ele exporta o OpenAPI do FastAPI (sem subir a API) para `frontend/src/api/openapi.gerado.json` e

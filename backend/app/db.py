@@ -1,7 +1,8 @@
 from collections.abc import Iterator
 
+import sqlalchemy
 from fastapi import Request
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import Settings
@@ -15,7 +16,9 @@ class Base(DeclarativeBase):
 
 
 def criar_engine(settings: Settings) -> Engine:
-    return create_engine(
+    # Pelo módulo, não por `from sqlalchemy import create_engine`: a instrumentação do OTel
+    # (app.observabilidade) troca `sqlalchemy.create_engine` em tempo de execução.
+    return sqlalchemy.create_engine(
         settings.database_url.get_secret_value(),
         # Testa a conexão antes de usar: descarta conexões mortas do pool.
         pool_pre_ping=True,

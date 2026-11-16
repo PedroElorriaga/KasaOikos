@@ -40,5 +40,7 @@ def cliente_para(postgres: PostgresContainer, *, jwks_url: str) -> TestClient:
         oidc_audience=AUDIENCIA,
         oidc_jwks_url=jwks_url,
         cors_origins=[ORIGEM_FRONT],
+        # Explícito: um OTEL_EXPORTER_OTLP_ENDPOINT do `.env` não pode exportar spans dos testes.
+        otel_exporter_otlp_endpoint=None,
     )
     return TestClient(create_app(settings))

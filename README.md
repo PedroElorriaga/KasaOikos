@@ -165,6 +165,13 @@ just check
 6. Observabilidade (opcional): `docker compose --profile obs up -d` sobe também o Grafana em
    http://localhost:3000 (imagem `grafana/otel-lgtm`, OTLP em 4317/4318).
 
+   - Com `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` no `.env`, a API envia um trace por
+     requisição, com os spans do banco (SQLAlchemy). Para ver: entre no app, depois Grafana →
+     Explore → Tempo → Search, serviço `kasaoikos-api`, e abra o trace de `GET /me`.
+   - Os logs da API saem no terminal em JSON, uma linha por evento, com `trace_id` (é o mesmo id
+     do trace no Tempo). Cada requisição gera uma linha `app.acesso` com método, caminho (sem query),
+     status e duração. Logs nunca levam e-mail, token, claims nem o IP do cliente.
+
 7. Para parar: `docker compose down` (os dados ficam no volume `postgres-dados`).
 
 Contrato da API: depois de mudar rotas ou esquemas no back, rode `pnpm --dir frontend gen:api`.

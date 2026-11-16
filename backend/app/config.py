@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     # Vazio: nenhuma origem liberada (fecha por padrão).
     cors_origins: list[str] = []
 
+    # Base do coletor OTLP HTTP (ex.: http://localhost:4318, o `lgtm` local).
+    # Vazio: os traces não são exportados.
+    otel_exporter_otlp_endpoint: str | None = None
+
     @field_validator("cors_origins")
     @classmethod
     def _origens_exatas(cls, origens: list[str]) -> list[str]:

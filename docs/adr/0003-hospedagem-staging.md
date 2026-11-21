@@ -1,6 +1,6 @@
 # ADR-0003: Hospedagem do staging
 
-Data: 2026-11-11 · Status: **aceita**
+Data: 2026-11-11 · Status: **substituída** pela [ADR-0004](0004-staging-vm-azure.md) (VM na Azure)
 
 ## Contexto
 

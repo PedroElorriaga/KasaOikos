@@ -29,7 +29,7 @@ Data: 2026-11-10 · Status: **proposta** (aguardando revisão)
 | Carga | k6 | Pedido explícito; os scripts ficam versionados em `load/` |
 | CI | GitHub Actions: lint, tipos, testes, `pip-audit`, `pnpm audit`, CodeQL, gitleaks | Itens de segurança do checklist |
 | Autenticação | **Keycloak** (OIDC), ver ADR-0002 | Login padrão de mercado, compartilhado com os serviços futuros |
-| Hospedagem staging | **VPS Hetzner + Docker Compose**, ver ADR-0003 | Mais barato e igual ao ambiente local; Railway como plano B |
+| Hospedagem staging | **VM na Azure + Docker Compose**, ver ADR-0004 (substitui a ADR-0003) | Igual ao ambiente local; custo coberto pela assinatura da empresa; Hetzner como plano B |
 
 ## Autenticação
 

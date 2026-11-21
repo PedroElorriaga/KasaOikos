@@ -11,7 +11,7 @@ Implemente uma mudança (ex.: M0.2) por vez, exatamente como descrita na spec; o
 - Observabilidade: OpenTelemetry → Grafana (local via docker compose)
 - Auth: Keycloak (OIDC, Authorization Code + PKCE). A API só valida o JWT (assinatura via JWKS, `iss`, `aud`, `exp`).
   Papéis por casa ficam no banco do app, não no Keycloak. Token só em memória no front, nunca em localStorage. Ver ADR-0002.
-- Staging: VPS Hetzner com Docker Compose + Caddy; front em CDN estática. Deploy só pelo CI. A IA não acessa o servidor. Ver ADR-0003.
+- Staging: VM na Azure (assinatura da empresa) com Docker Compose + Caddy; front em CDN estática. Deploy só pelo CI. A IA não acessa o servidor nem a assinatura Azure. Ver ADR-0004.
 
 ## Ambiente
 - Desenvolvimento em Windows nativo (PowerShell) com Docker Desktop; CI e staging em Linux.

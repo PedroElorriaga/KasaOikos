@@ -1,6 +1,6 @@
 # Spec: Fase 0 · Fundação
 
-Status: **rascunho para revisão** · Estimativa: 5 a 7 dias · Base: README, ADR-0001, ADR-0002, ADR-0003
+Status: **rascunho para revisão** · Estimativa: 5 a 7 dias · Base: README, ADR-0001, ADR-0002, ADR-0004 (substitui a ADR-0003)
 
 ## Objetivo
 
@@ -9,7 +9,7 @@ Deixar o projeto pronto para receber funcionalidades. Ao final da fase:
 - o repositório tem CI verde, e lint, tipos e testes rodam com um comando;
 - o ambiente local sobe com um comando: Postgres, Keycloak e, opcionalmente, Grafana;
 - o login funciona de ponta a ponta: o front autentica no Keycloak, chama a API e a API reconhece o usuário;
-- o staging está no ar na VPS, com deploy feito só pelo CI;
+- o staging está no ar na VM da Azure, com deploy feito só pelo CI;
 - os riscos de k6 e Grafana foram testados em um spike curto.
 
 ## Fora do escopo
@@ -24,7 +24,7 @@ Casas, tarefas, custos, estoque e qualquer tela além de login, layout base e "O
 | D2 | Repositório público ou privado no GitHub? | ✅ **Decidido: público.** Gitleaks no pre-commit e push protection do GitHub ligados **antes do primeiro push**; o histórico nunca pode ter segredo, nem por um commit. |
 | D3 | Licença | ✅ **Decidido: MIT.** Arquivo `LICENSE` entra na M0.1. |
 | D4 | Comando único para checar tudo | ✅ **Decidido: `just check`**, via [just](https://github.com/casey/just), que roda igual em PowerShell e no CI. Instalar o `just` é pré-requisito no README. |
-| D5 | Domínio do staging | Um domínio barato ou subdomínio seu (ex.: `staging.kasaoikos.dev`). O HTTPS automático do Caddy precisa de um domínio apontando para a VPS. |
+| D5 | Domínio do staging | Um domínio barato ou subdomínio seu (ex.: `staging.kasaoikos.dev`). O HTTPS automático do Caddy precisa de um domínio apontando para a VM. |
 
 ## Mudanças
 
@@ -169,19 +169,19 @@ Cada mudança vira **uma branch e um PR**, e deve caber em 10 a 15 minutos de re
 
 ---
 
-### M0.9 · Staging na VPS Hetzner
+### M0.9 · Staging em uma VM na Azure
 
 **Feito por você (prepare-se):**
-1. Criar a conta e a VPS na Hetzner. Pagamento e senha são com você.
-2. Apontar o domínio (D5) para o IP da VPS.
-3. Seguir o runbook `docs/runbooks/vps.md` (o Claude escreve; você executa): usuário sem root, SSH só por chave, firewall nas portas 22, 80 e 443, `unattended-upgrades` e Docker.
-4. Cadastrar os segredos de deploy no GitHub (chave SSH de deploy, `.env` de staging).
+1. Criar a VM Linux (2 vCPU, 4 GB) na assinatura Azure da empresa, em um resource group dedicado, com tags e alerta de orçamento (ADR-0004). Credenciais da Azure ficam só com você.
+2. Apontar o domínio (D5) para o IP público da VM.
+3. Seguir o runbook `docs/runbooks/vm.md` (o Claude escreve; você executa): usuário sem root, SSH só por chave, NSG e `ufw` liberando só as portas 22, 80 e 443, `unattended-upgrades` e Docker.
+4. Cadastrar os segredos de deploy no GitHub (chave SSH de deploy, `.env` de staging). Nenhuma credencial da Azure vai para o GitHub.
 
 **Feito com o Claude:**
 - `compose.prod.yaml`: API, Keycloak (modo produção, `hostname` configurado), Postgres e Caddy (HTTPS automático; console admin do Keycloak não exposto).
 - Workflow `deploy-staging`: depois do CI verde na `main`, faz build das imagens, publica no GHCR e roda via SSH `docker compose pull && docker compose up -d` + migrations.
 - Front publicado em CDN estática (Cloudflare Pages ou similar).
-- Backup: `pg_dump` diário para storage externo + `docs/runbooks/restore.md`.
+- Backup: `pg_dump` diário para um container privado do Azure Blob Storage + `docs/runbooks/restore.md`.
 - Health check externo com alerta (ex.: UptimeRobot ou o próprio Grafana Cloud).
 
 **Aceite**

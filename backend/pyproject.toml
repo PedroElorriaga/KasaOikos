@@ -14,7 +14,7 @@ dependencies = [
     "pydantic-settings>=2.16.3",
     "pyjwt[crypto]>=2.15.1",
     # <2.1: opentelemetry-instrumentation-sqlalchemy 0.66 só suporta até 2.0 (2.1 vem na 0.67).
-    "sqlalchemy>=2.0.44,<2.1",
+    "sqlalchemy>=2.0.44,<2.2",
     "uvicorn>=0.54.0",
 ]
 
